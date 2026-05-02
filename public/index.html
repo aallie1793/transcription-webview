@@ -2,181 +2,43 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Transcription Webview</title>
     <style>
-      :root {
-        --bg: #0b1020;
-        --panel: rgba(255, 255, 255, 0.04);
-        --panel2: rgba(255, 255, 255, 0.02);
-        --text: #e8eefc;
-        --muted: rgba(232, 238, 252, 0.75);
-        --line: rgba(255, 255, 255, 0.12);
-        --accent: rgba(129, 161, 255, 0.86);
+      :root{
+        --bg:#0b1020;
+        --panel:rgba(255,255,255,0.04);
+        --panel2:rgba(255,255,255,0.02);
+        --text:#e8eefc;
+        --muted:rgba(232,238,252,0.75);
+        --line:rgba(255,255,255,0.12);
+        --accent:rgba(129,161,255,0.86);
       }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-      }
-
-      header {
-        padding: 16px 20px;
-        background: rgba(255, 255, 255, 0.06);
-        border-bottom: 1px solid var(--line);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: 16px;
-      }
-
-      .muted {
-        opacity: 0.9;
-        color: var(--muted);
-        font-size: 12px;
-      }
-
-      .top {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      input[type="search"] {
-        padding: 9px 10px;
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background: rgba(0, 0, 0, 0.35);
-        color: #fff;
-        min-width: 280px;
-      }
-
-      button {
-        cursor: pointer;
-        border-radius: 10px;
-        padding: 9px 10px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        background: rgba(255, 255, 255, 0.02);
-        color: #fff;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: 260px 320px 1fr 360px;
-        height: calc(100vh - 64px);
-      }
-
-      .pane {
-        border-right: 1px solid var(--line);
-        display: flex;
-        flex-direction: column;
-      }
-
-      .pane:last-child {
-        border-right: none;
-        border-left: 1px solid var(--line);
-      }
-
-      .section {
-        padding: 12px;
-        border-bottom: 1px solid var(--line);
-        background: var(--panel2);
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .scroll {
-        overflow: auto;
-      }
-
-      .card {
-        border-radius: 12px;
-        padding: 12px;
-        margin: 12px;
-        background: var(--panel);
-        border: 1px solid rgba(255, 255, 255, 0.10);
-      }
-
-      .clickable {
-        cursor: pointer;
-      }
-
-      .card.clickable:hover {
-        background: rgba(255, 255, 255, 0.06);
-      }
-
-      .active {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(129, 161, 255, 0.16);
-      }
-
-      .title {
-        font-weight: 650;
-        font-size: 12px;
-      }
-
-      .subline {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        margin-top: 6px;
-        color: var(--muted);
-        font-size: 12px;
-      }
-
-      .timeline {
-        border-radius: 12px;
-        padding: 12px;
-        margin: 12px;
-        background: var(--panel);
-        border: 1px solid rgba(255, 255, 255, 0.10);
-      }
-
-      .chunk {
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
-        padding: 10px 0;
-      }
-
-      .chunk:last-child {
-        border-bottom: none;
-      }
-
-      .meta {
-        display: flex;
-        gap: 10px;
-        align-items: baseline;
-        margin-bottom: 4px;
-      }
-
-      .time {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-        opacity: 0.9;
-        min-width: 90px;
-      }
-
-      .speaker {
-        font-weight: 800;
-        font-size: 12px;
-        color: rgba(129, 161, 255, 0.95);
-      }
-
-      .blob {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        font-size: 12px;
-        white-space: pre-wrap;
-      }
+      *{box-sizing:border-box}
+      body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+      header{padding:14px 16px;background:rgba(255,255,255,0.06);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+      header h1{margin:0;font-size:16px}
+      .muted{font-size:12px;color:var(--muted)}
+      .top{display:flex;gap:10px;align-items:center}
+      input[type="search"]{padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.35);color:#fff;min-width:280px}
+      button{cursor:pointer;padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.02);color:#fff}
+      .grid{display:grid;grid-template-columns:240px 320px 1fr 360px;height:calc(100vh - 58px)}
+      .pane{border-right:1px solid var(--line);display:flex;flex-direction:column}
+      .pane:last-child{border-right:none;border-left:1px solid var(--line)}
+      .head{padding:12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;background:var(--panel2);font-weight:700}
+      .scroll{overflow:auto}
+      .card,.timeline{margin:12px;padding:12px;border-radius:12px;background:var(--panel);border:1px solid rgba(255,255,255,0.10)}
+      .card.clickable{cursor:pointer}
+      .card.clickable:hover{background:rgba(255,255,255,0.06)}
+      .active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(129,161,255,0.16)}
+      .title{font-size:12px;font-weight:700}
+      .subline{margin-top:6px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px}
+      .chunk{padding:10px 0;border-bottom:1px dashed rgba(255,255,255,0.15)}
+      .chunk:last-child{border-bottom:none}
+      .meta{display:flex;gap:10px;align-items:baseline;margin-bottom:4px}
+      .time{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;min-width:100px;opacity:0.9}
+      .speaker{font-weight:900;font-size:12px;color:rgba(129,161,255,0.95)}
+      .blob{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px}
     </style>
   </head>
   <body>
@@ -185,37 +47,32 @@
         <h1>Transcription Webview</h1>
         <div class="muted">User → Sessions → Transcript (timestamps + speakers) → Summary</div>
       </div>
-
       <div class="top">
-        <input type="search" id="search" placeholder="Search sessions (user/title/text)" />
+        <input id="search" type="search" placeholder="Search sessions (user/title/text)" />
         <button id="reload">Reload</button>
       </div>
     </header>
-
     <div class="grid">
       <div class="pane">
-        <div class="section"><b>Users</b><span class="muted" id="userMeta"></span></div>
+        <div class="head">Users <span class="muted" id="userMeta"></span></div>
         <div class="scroll" id="users"></div>
       </div>
-
       <div class="pane">
-        <div class="section"><b>Sessions</b><span class="muted" id="sessionMeta"></span></div>
+        <div class="head">Sessions <span class="muted" id="sessionMeta"></span></div>
         <div class="scroll" id="sessions"></div>
       </div>
-
       <div class="pane">
-        <div class="section"><b>Transcript</b><span class="muted" id="transcriptMeta"></span></div>
+        <div class="head">Transcript <span class="muted" id="transcriptMeta"></span></div>
         <div class="scroll" id="transcript"></div>
       </div>
-
       <div class="pane">
-        <div class="section"><b>Summary</b><span class="muted" id="summaryMeta"></span></div>
+        <div class="head">Summary <span class="muted" id="summaryMeta"></span></div>
         <div class="scroll" id="summary"></div>
       </div>
     </div>
 
     <script>
-      (function () {
+      (function(){
         const els = {
           users: document.getElementById('users'),
           sessions: document.getElementById('sessions'),
@@ -232,139 +89,123 @@
         const state = {
           all: [],
           filtered: [],
-          groups: new Map(), // key -> { name, sessions }
+          groups: new Map(),
           selectedUser: null,
           selectedSessionId: null,
-          chunkCache: new Map(), // sessionId -> chunks
+          chunkCache: new Map(),
           chunkLoading: false,
           chunkError: null,
-          loading: true,
           error: null,
         };
 
-        const isString = (v) => typeof v === 'string' && v.trim().length > 0;
+        function escapeHtml(str){
+          return String(str)
+            .replaceAll('&','&amp;')
+            .replaceAll('<','&lt;')
+            .replaceAll('>','&gt;')
+            .replaceAll('"','&quot;')
+            .replaceAll("'",'&#39;');
+        }
 
-        function firstDefined(obj, keys) {
-          for (const k of keys) {
+        function firstDefined(obj, keys){
+          for(const k of keys){
             const v = obj && obj[k];
-            if (v !== undefined && v !== null) return v;
+            if(v !== undefined && v !== null) return v;
           }
           return null;
         }
 
-        function getUserKey(s) {
+        function getUserKey(s){
           return (
-            firstDefined(s, ['userId', 'userEmail', 'email', 'user', 'userName', 'userDisplayName']) ||
+            firstDefined(s, ['userId','userEmail','email','user','userName','userDisplayName']) ||
             'unknown'
           ).toString();
         }
 
-        function getUserName(s) {
+        function getUserName(s){
           return (
-            firstDefined(s, ['userName', 'userDisplayName', 'userFullName', 'user', 'userId', 'email', 'userEmail']) ||
+            firstDefined(s, ['userName','userDisplayName','userFullName','user','userId','email','userEmail']) ||
             'Unknown'
           ).toString();
         }
 
-        function getTitle(s) {
+        function getTitle(s){
           return (
-            firstDefined(s, ['title', 'sessionId', 'conversationTitle', 'name']) ||
+            firstDefined(s, ['title','sessionId','conversationTitle','name']) ||
             '(untitled session)'
           ).toString();
         }
 
-        function getSessionTimestamp(s) {
-          const t = firstDefined(s, [
-            'createdAt',
-            'updatedAt',
-            'startTime',
-            'endTime',
-            'date',
-            'timestamp',
-            'ts',
-          ]);
+        function getSessionTimestamp(s){
+          const t = firstDefined(s, ['createdAt','updatedAt','startTime','endTime','date','timestamp','ts']);
+          if(!t) return null;
           const d = new Date(t);
           return isNaN(d.getTime()) ? null : d;
         }
 
-        function fmtSessionTime(s) {
+        function fmtSessionTime(s){
           const d = getSessionTimestamp(s);
           return d ? d.toLocaleString() : '';
         }
 
-        function fmtTimeCode(ts) {
-          if (ts === null || ts === undefined) return '';
+        function fmtTimeCode(ts){
+          if(ts === null || ts === undefined) return '';
 
-          // numeric seconds
-          if (typeof ts === 'number') {
-            const total = ts;
-            const m = Math.floor(total / 60);
-            const s = Math.floor(total % 60)
-              .toString()
-              .padStart(2, '0');
+          if(typeof ts === 'number'){
+            const m = Math.floor(ts / 60);
+            const s = String(Math.floor(ts % 60)).padStart(2,'0');
             return `${m}:${s}`;
           }
 
           const d = new Date(ts);
-          if (!isNaN(d.getTime())) {
-            return d.toISOString().slice(11, 19); // HH:MM:SS
-          }
-
+          if(!isNaN(d.getTime())) return d.toISOString().slice(11,19);
           return String(ts);
         }
 
-        function groupBySpeaker(chunks) {
-          if (!Array.isArray(chunks) || chunks.length === 0) return [];
-          const out = [];
-          let cur = null;
+        function parseSpeakerFromText(text){
+          if(!text) return null;
+          const m = text.match(/^\s*([A-Za-z0-9_.\- ]{1,24})\s*[:\-\u2013\u2014]\s+/);
+          if(!m) return null;
+          const speaker = m[1].trim();
+          if(!speaker) return null;
+          return { speaker, text: text.slice(m[0].length) };
+        }
 
-          for (const c of chunks) {
-            const speaker = c.speaker || '';
-            const text = (c.text || '').toString();
-            const startTime = c.startTime || null;
-            const endTime = c.endTime || null;
+        function deriveSpeakerAndText(c){
+          let text = (c && c.text != null ? String(c.text) : '');
+          let speaker = c?.speaker || c?.classification || '';
 
-            if (cur && cur.speaker === speaker) {
-              cur.text.push(text);
-              cur.endTime = endTime || cur.endTime;
-            } else {
-              if (cur) out.push(cur);
-              cur = { speaker, startTime, endTime, text: [text] };
+          // try to parse speaker name from "Name:" prefix
+          if(!speaker){
+            const parsed = parseSpeakerFromText(text);
+            if(parsed){
+              speaker = parsed.speaker;
+              text = parsed.text;
             }
           }
 
-          if (cur) out.push(cur);
-
-          return out;
+          speaker = speaker ? String(speaker) : '';
+          return { speaker, text };
         }
 
-        function summaryFromSession(s) {
+        function summaryFromSession(s){
           return (
-            firstDefined(s, ['aiSummary', 'runningSummary', 'summary', 'note', 'notes', 'transcript', 'text']) ||
+            firstDefined(s, ['aiSummary','runningSummary','summary','note','notes','transcript','text']) ||
             ''
           ).toString();
         }
 
-        function transcriptFallback(s) {
-          const t = (
-            firstDefined(s, ['transcript', 'text', 'runningSummary', 'transcriptText', 'message', 'notes']) ||
-            ''
-          ).toString();
-          return t ? [{ speaker: '', startTime: null, endTime: null, text: [t] }] : [];
-        }
-
-        function buildGroups() {
+        function buildGroups(){
           const groups = new Map();
-          for (const s of state.filtered) {
+          for(const s of state.filtered){
             const key = getUserKey(s);
             const name = getUserName(s);
-            if (!groups.has(key)) groups.set(key, { key, name, sessions: [] });
+            if(!groups.has(key)) groups.set(key, { key, name, sessions: [] });
             groups.get(key).sessions.push(s);
           }
 
-          // sort sessions by latest time desc
-          for (const g of groups.values()) {
-            g.sessions.sort((a, b) => {
+          for(const g of groups.values()){
+            g.sessions.sort((a,b)=>{
               const ta = getSessionTimestamp(a)?.getTime() || 0;
               const tb = getSessionTimestamp(b)?.getTime() || 0;
               return tb - ta;
@@ -373,37 +214,31 @@
 
           state.groups = groups;
 
-          if (!state.selectedUser) {
-            const firstKey = groups.keys().next().value;
-            state.selectedUser = firstKey || null;
+          if(!state.selectedUser){
+            state.selectedUser = groups.keys().next().value || null;
+          }
+          if(state.selectedUser && !groups.has(state.selectedUser)){
+            state.selectedUser = groups.keys().next().value || null;
           }
 
-          if (state.selectedUser && !groups.has(state.selectedUser)) {
-            state.selectedUser = null;
-            const firstKey = groups.keys().next().value;
-            state.selectedUser = firstKey || null;
+          if(state.selectedUser && state.selectedSessionId){
+            const g = state.groups.get(state.selectedUser);
+            const found = g?.sessions?.find((x)=>String(x._id)===String(state.selectedSessionId));
+            if(!found) state.selectedSessionId = null;
           }
 
-          // ensure selected session belongs to selected user
-          if (state.selectedUser && state.selectedSessionId) {
-            const g = groups.get(state.selectedUser);
-            const found = g?.sessions?.find((x) => x._id === state.selectedSessionId);
-            if (!found) state.selectedSessionId = null;
-          }
-
-          // default session
-          if (state.selectedSessionId == null && state.selectedUser) {
-            const g = groups.get(state.selectedUser);
-            const first = g?.sessions?.[0];
-            state.selectedSessionId = first?._id || null;
+          if(state.selectedSessionId == null && state.selectedUser){
+            const g = state.groups.get(state.selectedUser);
+            state.selectedSessionId = g?.sessions?.[0]?._id || null;
           }
         }
 
-        function renderUsers() {
-          const parts = [];
-          const entries = Array.from(state.groups.values()).sort((a, b) => a.name.localeCompare(b.name));
+        function renderUsers(){
+          const entries = Array.from(state.groups.values()).sort((a,b)=>a.name.localeCompare(b.name));
+          els.userMeta.textContent = `${entries.length} users`;
 
-          for (const g of entries) {
+          const parts = [];
+          for(const g of entries){
             const active = g.key === state.selectedUser ? 'active' : '';
             const last = g.sessions[0] ? fmtSessionTime(g.sessions[0]) : '';
 
@@ -417,252 +252,213 @@
               </div>
             `);
           }
-
           els.users.innerHTML = parts.join('');
 
-          for (const el of els.users.querySelectorAll('[data-key]')) {
-            el.onclick = () => {
-              state.selectedUser = decodeURIComponent(el.getAttribute('data-key') || '');
+          for(const el of els.users.querySelectorAll('[data-key]')){
+            el.onclick = ()=>{
+              state.selectedUser = decodeURIComponent(el.getAttribute('data-key')||'');
               state.selectedSessionId = null;
+              state.chunkCache.clear();
               state.chunkError = null;
               render();
             };
           }
-
-          els.userMeta.textContent = `${entries.length || 0} users`;
         }
 
-        function renderSessions() {
+        function renderSessions(){
           const g = state.selectedUser ? state.groups.get(state.selectedUser) : null;
-
-          if (!g) {
-            els.sessions.innerHTML = '<div class="muted" style="padding:12px;">No sessions.</div>';
+          if(!g){
             els.sessionMeta.textContent = '';
+            els.sessions.innerHTML = '<div class="muted" style="padding:12px">No sessions</div>';
             return;
           }
-
           els.sessionMeta.textContent = `${g.sessions.length} sessions`;
 
-          const parts = [];
-          for (const s of g.sessions) {
-            const active = s._id === state.selectedSessionId ? 'active' : '';
+          const parts=[];
+          for(const s of g.sessions){
+            const active = String(s._id) === String(state.selectedSessionId) ? 'active' : '';
             parts.push(`
               <div class="card clickable ${active}" data-id="${escapeHtml(String(s._id))}">
                 <div class="title">${escapeHtml(getTitle(s))}</div>
                 <div class="subline">
                   <span>${escapeHtml(fmtSessionTime(s))}</span>
-                  <span>${escapeHtml(firstDefined(s, ['classification', 'status', 'stage']) || '')}</span>
+                  <span>${escapeHtml(firstDefined(s, ['classification','status','stage'])||'')}</span>
                 </div>
               </div>
             `);
           }
 
           els.sessions.innerHTML = parts.join('');
-
-          for (const el of els.sessions.querySelectorAll('[data-id]')) {
-            el.onclick = async () => {
-              const id = el.getAttribute('data-id') || '';
+          for(const el of els.sessions.querySelectorAll('[data-id]')){
+            el.onclick = async ()=>{
+              const id = el.getAttribute('data-id')||'';
               await selectSession(id);
             };
           }
         }
 
-        function getSelectedSession() {
-          if (!state.selectedUser) return null;
+        function getSelectedSession(){
+          if(!state.selectedUser || !state.selectedSessionId) return null;
           const g = state.groups.get(state.selectedUser);
-          return g?.sessions?.find((s) => s._id === state.selectedSessionId) || null;
+          return g?.sessions?.find((s)=>String(s._id)===String(state.selectedSessionId))||null;
         }
 
-        function renderTranscript() {
+        function renderTranscript(){
           const session = getSelectedSession();
-          if (!session) {
-            els.transcript.innerHTML = '<div class="muted" style="padding:12px;">Select a session</div>';
-            els.transcriptMeta.textContent = '';
+          if(!session){
+            els.transcriptMeta.textContent='';
+            els.transcript.innerHTML = '<div class="muted" style="padding:12px">Select a session</div>';
             return;
           }
 
-          const title = getTitle(session);
-          const when = fmtSessionTime(session);
+          els.transcriptMeta.textContent = `${getTitle(session)} · ${fmtSessionTime(session)}`;
 
-          els.transcriptMeta.textContent = `${title} · ${when}`;
-
-          if (state.chunkLoading) {
-            els.transcript.innerHTML = '<div class="card">Loading chunked transcript…</div>';
+          if(state.chunkLoading){
+            els.transcript.innerHTML = '<div class="card">Loading transcript…</div>';
             return;
           }
-
-          if (state.chunkError) {
-            els.transcript.innerHTML = `<div class="card">Failed to load chunks: ${escapeHtml(
-              state.chunkError
-            )}</div>`;
+          if(state.chunkError){
+            els.transcript.innerHTML = `<div class="card">Failed to load chunks: ${escapeHtml(state.chunkError)}</div>`;
             return;
           }
 
           const chunks = state.chunkCache.get(state.selectedSessionId) || [];
 
-          const paragraphGroups = chunks.length ? groupBySpeaker(chunks) : transcriptFallback(session);
-
-          const parts = [];
+          const parts=[];
           parts.push('<div class="timeline">');
-
-          for (const p of paragraphGroups) {
-            const start = fmtTimeCode(p.startTime);
-            const end = fmtTimeCode(p.endTime);
-            const speaker = p.speaker ? escapeHtml(p.speaker) : '';
-            const text = escapeHtml(p.text.join(' ').trim());
-
+          for(const ch of chunks){
+            const {speaker,text} = deriveSpeakerAndText(ch);
+            const start = fmtTimeCode(ch.startTime);
+            const end = fmtTimeCode(ch.endTime);
             const timeLabel = end ? `${start} - ${end}` : start;
-
             parts.push(`
               <div class="chunk">
                 <div class="meta">
                   <span class="time">${escapeHtml(timeLabel)}</span>
-                  ${speaker ? `<span class="speaker">${speaker}</span>` : ''}
+                  ${speaker ? `<span class="speaker">${escapeHtml(speaker)}</span>` : ''}
                 </div>
-                <div class="text">${text}</div>
+                <div class="text">${escapeHtml(text)}</div>
               </div>
             `);
           }
-
           parts.push('</div>');
+
           els.transcript.innerHTML = parts.join('');
         }
 
-        function renderSummary() {
+        function renderSummary(){
           const session = getSelectedSession();
-          if (!session) {
-            els.summary.innerHTML = '<div class="muted" style="padding:12px;">No session selected</div>';
-            els.summaryMeta.textContent = '';
+          if(!session){
+            els.summaryMeta.textContent='';
+            els.summary.innerHTML = '<div class="muted" style="padding:12px">No session selected</div>';
             return;
           }
-
-          const title = getTitle(session);
-          els.summaryMeta.textContent = title;
-
+          els.summaryMeta.textContent = getTitle(session);
           const summary = summaryFromSession(session);
-          const raw = JSON.stringify(session, null, 2);
+          const raw = JSON.stringify(session,null,2);
 
           els.summary.innerHTML = `
             <div class="card">
               <div class="title">AI Summary</div>
               <div class="muted">${summary ? '' : 'No summary field found; showing transcript/text instead.'}</div>
-              <div style="margin-top:8px">${escapeHtml(summary || '')}</div>
+              <div style="margin-top:8px">${escapeHtml(summary||'')}</div>
             </div>
             <div class="card">
               <div class="title">Raw JSON</div>
               <pre class="blob">${escapeHtml(raw)}</pre>
-            </div>
-          `;
+            </div>`;
         }
 
-        async function loadChunks(id) {
+        async function loadChunks(id){
           state.chunkError = null;
-          if (!id) {
-            state.chunkCache.delete(id);
-            return;
-          }
-
-          if (state.chunkCache.has(id)) return;
+          if(!id) return;
+          if(state.chunkCache.has(id)) return;
 
           state.chunkLoading = true;
           renderTranscript();
-
-          try {
+          try{
             const res = await fetch(`/api/sessions/${encodeURIComponent(id)}/chunks`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if(!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            state.chunkCache.set(id, Array.isArray(data?.chunks) ? data.chunks : []);
-          } catch (e) {
-            state.chunkCache.set(id, []);
+            const chunks = Array.isArray(data?.chunks) ? data.chunks : [];
+            // ensure ordered
+            chunks.sort((a,b)=>{
+              const at = new Date(a?.startTime ?? 0).getTime() || 0;
+              const bt = new Date(b?.startTime ?? 0).getTime() || 0;
+              if(at !== bt) return at - bt;
+              return (a.chunkIndex ?? a.idx ?? 0) - (b.chunkIndex ?? b.idx ?? 0);
+            });
+            state.chunkCache.set(id,chunks);
+          }catch(e){
+            state.chunkCache.set(id,[]);
             state.chunkError = e?.message || String(e);
-          } finally {
+          }finally{
             state.chunkLoading = false;
           }
         }
 
-        async function selectSession(id) {
+        async function selectSession(id){
           state.selectedSessionId = id;
           await loadChunks(id);
           render();
         }
 
-        function applySearchAndGrouping() {
-          const q = (els.search.value || '').trim();
-          const needle = q.toLowerCase();
-
-          if (!needle) {
+        function applySearch(){
+          const q = (els.search.value||'').trim().toLowerCase();
+          if(!q){
             state.filtered = state.all.slice();
-          } else {
-            state.filtered = state.all.filter((s) => {
+          }else{
+            state.filtered = state.all.filter((s)=>{
               const hay = [
                 getUserName(s),
                 getUserKey(s),
                 getTitle(s),
-                firstDefined(s, ['text', 'transcript', 'runningSummary', 'aiSummary', 'note']) || '',
+                firstDefined(s,['text','transcript','runningSummary','aiSummary','note'])||''
               ].join(' ').toLowerCase();
-              return hay.includes(needle);
+              return hay.includes(q);
             });
           }
-
-          buildGroups();
         }
 
-        function render() {
+        function render(){
           renderUsers();
           renderSessions();
           renderTranscript();
           renderSummary();
         }
 
-        async function fetchSessions() {
-          state.loading = true;
+        async function fetchSessions(){
           state.error = null;
-          state.selectedSessionId = null;
           state.selectedUser = null;
+          state.selectedSessionId = null;
           state.chunkCache.clear();
           state.chunkError = null;
 
-          try {
-            const q = (els.search.value || '').trim();
-            const url = q
-              ? `/api/sessions?limit=500&q=${encodeURIComponent(q)}`
-              : '/api/sessions?limit=500';
+          try{
+            const q = (els.search.value||'').trim();
+            const url = q ? `/api/sessions?limit=500&q=${encodeURIComponent(q)}` : '/api/sessions?limit=500';
             const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if(!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             state.all = Array.isArray(data) ? data : [];
-          } catch (e) {
+          }catch(e){
             state.error = e?.message || String(e);
-          } finally {
-            state.loading = false;
+            state.all=[];
           }
 
-          applySearchAndGrouping();
+          applySearch();
+          buildGroups();
           render();
 
-          if (state.error) {
+          if(state.error){
             els.users.innerHTML = `<div class="card">Failed to load sessions: ${escapeHtml(state.error)}</div>`;
-            els.sessions.innerHTML = '';
-            els.transcript.innerHTML = '';
-            els.summary.innerHTML = '';
-            els.userMeta.textContent = '';
-            els.sessionMeta.textContent = '';
+            els.sessions.innerHTML = els.transcript.innerHTML = els.summary.innerHTML = '';
+            els.userMeta.textContent = els.sessionMeta.textContent = '';
           }
-        }
-
-        function escapeHtml(str) {
-          return String(str)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#39;');
         }
 
         els.reload.onclick = fetchSessions;
-        els.search.onkeydown = (e) => {
-          if (e.key === 'Enter') fetchSessions();
-        };
+        els.search.onkeydown = (e)=>{ if(e.key==='Enter') fetchSessions(); };
 
         fetchSessions();
       })();
