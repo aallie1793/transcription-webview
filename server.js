@@ -1,11 +1,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,9 +16,12 @@ if (!uri) {
   console.error('Missing MONGODB_URI env var');
 }
 
-mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 }).catch((e) => {
-  console.error('Mongo connection error', e.message);
-});
+mongoose
+  .connect(uri, { serverSelectionTimeoutMS: 5000 })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((e) => {
+    console.error('Mongo connection error', e.message);
+  });
 
 const sessionSchema = new mongoose.Schema({}, { strict: false });
 const Session = mongoose.model('Session', sessionSchema);
@@ -53,7 +53,10 @@ app.get('/api/sessions', async (req, res) => {
     res.json(sessions);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to fetch sessions', details: err.message });
+    res.status(500).json({
+      error: 'Failed to fetch sessions',
+      details: err.message,
+    });
   }
 });
 
