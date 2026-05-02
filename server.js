@@ -48,12 +48,48 @@ mongoose.connection.on('connected', async () => {
   }
 });
 
-const sessionSchema = new mongoose.Schema({}, { strict: false });
-
 const collectionName = process.env.MONGO_COLLECTION || 'sessions';
 console.log('Using collection:', collectionName);
 
+const sessionSchema = new mongoose.Schema({}, { strict: false });
 const Session = mongoose.model('Session', sessionSchema, collectionName);
+
+// Debug: list collections with counts
+app.get('/api/debug/collections', async (_req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    if (!db) return res.status(503).json({ error: 'DB not ready' });
+    const cols = await db.listCollections().toArray();
+
+    const counts = await Promise.all(
+      cols.map(async (c) => ({
+        name: c.name,
+        count: await db.collection(c.name).estimatedDocumentCount(),
+      }))
+    );
+
+    res.json(counts);
+  } catch (e) {
+    console.error('Debug collections error', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Debug: sample doc from collection
+app.get('/api/debug/sample', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    if (!db) return res.status(503).json({ error: 'DB not ready' });
+
+    const col = req.query.col?.toString() || collectionName;
+    const doc = await db.collection(col).findOne({});
+    if (!doc) return res.status(404).json({ error: 'No document found' });
+    res.json({ collection: col, sample: doc });
+  } catch (e) {
+    console.error('Debug sample error', e);
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // API: list sessions (latest first)
 app.get('/api/sessions', async (req, res) => {
@@ -101,7 +137,7 @@ app.get('/api/sessions/:id', async (req, res) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('*', (req, res) => {
+app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
