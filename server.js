@@ -32,10 +32,7 @@ mongoose
 mongoose.connection.on('connected', async () => {
   try {
     const dbs = await mongoose.connection.db.admin().listDatabases();
-    console.log(
-      'Mongo databases:',
-      dbs.databases.map((d) => d.name)
-    );
+    console.log('Mongo databases:', dbs.databases.map((d) => d.name));
   } catch (e) {
     console.error('Failed to list databases', e.message);
   }
@@ -51,8 +48,32 @@ mongoose.connection.on('connected', async () => {
 const collectionName = process.env.MONGO_COLLECTION || 'sessions';
 console.log('Using collection:', collectionName);
 
+const chunkCollectionName = process.env.CHUNK_COLLECTION || 'transcriptchunks';
+
 const sessionSchema = new mongoose.Schema({}, { strict: false });
 const Session = mongoose.model('Session', sessionSchema, collectionName);
+
+function toObjectId(id) {
+  if (!id) return null;
+
+  if (id instanceof mongoose.Types.ObjectId) return id;
+
+  let s = id;
+  if (typeof id === 'object') {
+    if (id._id) s = id._id;
+    if (id.$oid) s = id.$oid;
+  }
+  s = s.toString();
+
+  return /^[0-9a-fA-F]{24}$/.test(s) ? new mongoose.Types.ObjectId(s) : null;
+}
+
+function normalizeTimestamp(ts) {
+  if (!ts) return null;
+  if (ts instanceof Date) return ts.toISOString();
+  if (typeof ts === 'number') return ts;
+  return ts.toString();
+}
 
 // Debug: list collections with counts
 app.get('/api/debug/collections', async (_req, res) => {
@@ -105,13 +126,15 @@ app.get('/api/sessions', async (req, res) => {
           { transcript: regex },
           { message: regex },
           { title: regex },
+          { runningSummary: regex },
         ],
       };
     }
 
     const sessions = await Session.find(query)
       .sort({ createdAt: -1 })
-      .limit(Number(limit));
+      .limit(Number(limit))
+      .lean();
 
     res.json(sessions);
   } catch (err) {
@@ -120,6 +143,75 @@ app.get('/api/sessions', async (req, res) => {
       error: 'Failed to fetch sessions',
       details: err.message,
     });
+  }
+});
+
+// API: get chunked transcript for a session
+app.get('/api/sessions/:id/chunks', async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id).lean();
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+
+    const db = mongoose.connection.db;
+    if (!db) return res.status(503).json({ error: 'DB not ready' });
+
+    let chunks = [];
+
+    const rawIds =
+      session.chunkIds || session.chunksIds || session.chunkIDs || session.chunkIDs || session.chunks || session.chunk_ids;
+
+    if (Array.isArray(rawIds) && rawIds.length) {
+      const ids = rawIds.map(toObjectId).filter(Boolean);
+      if (ids.length) {
+        chunks = await db
+          .collection(chunkCollectionName)
+          .find({ _id: { $in: ids } })
+          .toArray();
+      }
+    } else if (Array.isArray(session.chunks)) {
+      chunks = session.chunks;
+    }
+
+    const normalized = chunks
+      .map((c, idx) => ({
+        idx,
+        chunkIndex: c.chunkIndex ?? c.idx ?? c.segmentIndex ?? idx,
+        text: c.text ?? c.message ?? c.transcript ?? c.content ?? '',
+        startTime: normalizeTimestamp(
+          c.startTime ?? c.start ?? c.tsStart ?? c.begin ?? c.timestamp ?? c.ts ?? c.createdAt ?? c.time
+        ),
+        endTime: normalizeTimestamp(
+          c.endTime ?? c.end ?? c.tsEnd ?? c.finish ?? c.completedAt ?? c.endTime ?? c.updatedAt
+        ),
+        speaker:
+          c.speakerName ??
+          c.speaker ??
+          c.speaker_id ??
+          c.speakerId ??
+          c.speakerLabel ??
+          c.role ??
+          c.user ??
+          c.userName ??
+          c.name ??
+          null,
+      }))
+      .sort((a, b) => {
+        const at = new Date(a.startTime ?? 0).getTime() || 0;
+        const bt = new Date(b.startTime ?? 0).getTime() || 0;
+        if (at !== bt) return at - bt;
+        return (a.chunkIndex ?? a.idx) - (b.chunkIndex ?? b.idx);
+      });
+
+    res.json({
+      chunks: normalized,
+      meta: {
+        chunkCollection: chunkCollectionName,
+        rawCount: chunks.length,
+      },
+    });
+  } catch (err) {
+    console.error('Chunk fetch error', err);
+    res.status(500).json({ error: 'Failed to fetch chunks', details: err.message });
   }
 });
 
