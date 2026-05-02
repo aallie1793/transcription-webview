@@ -11,20 +11,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const uri = process.env.MONGODB_URI;
+let uri = process.env.MONGODB_URI;
+const defaultDb = process.env.MONGO_DB;
 if (!uri) {
   console.error('Missing MONGODB_URI env var');
+} else if (defaultDb && !uri.includes(`/${defaultDb}`)) {
+  const [base, qs] = uri.split('?', 2);
+  uri = `${base.replace(/\/$/, '')}/${defaultDb}${qs ? `?${qs}` : ''}`;
+  console.log('Using DB:', defaultDb);
 }
 
 mongoose
-  .connect(uri, { serverSelectionTimeoutMS: 5000 })
+  .connect(uri, { serverSelectionTimeoutMS: 8000 })
   .then(() => console.log('Connected to MongoDB'))
   .catch((e) => {
     console.error('Mongo connection error', e.message);
   });
 
+mongoose.connection.on('connected', async () => {
+  try {
+    const cols = await mongoose.connection.db.listCollections().toArray();
+    console.log('Mongo collections:', cols.map((c) => c.name));
+  } catch (e) {
+    console.error('Failed to list collections', e.message);
+  }
+});
+
 const sessionSchema = new mongoose.Schema({}, { strict: false });
-const Session = mongoose.model('Session', sessionSchema);
+const collectionName = process.env.MONGO_COLLECTION || 'sessions';
+console.log('Using collection:', collectionName);
+const Session = mongoose.model('Session', sessionSchema, collectionName);
 
 // API: list sessions (latest first)
 app.get('/api/sessions', async (req, res) => {
@@ -32,8 +48,6 @@ app.get('/api/sessions', async (req, res) => {
     const { limit = 50, q } = req.query;
     let query = {};
 
-    // If you have a sessionId field, you can search it.
-    // If not, search "text" or "transcript" fields.
     if (q) {
       const regex = new RegExp(q, 'i');
       query = {
@@ -42,6 +56,7 @@ app.get('/api/sessions', async (req, res) => {
           { text: regex },
           { transcript: regex },
           { message: regex },
+          { title: regex },
         ],
       };
     }
@@ -66,7 +81,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log('Server running on port', port);
 });
