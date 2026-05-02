@@ -158,7 +158,12 @@ app.get('/api/sessions/:id/chunks', async (req, res) => {
     let chunks = [];
 
     const rawIds =
-      session.chunkIds || session.chunksIds || session.chunkIDs || session.chunkIDs || session.chunks || session.chunk_ids;
+      session.chunkIds ||
+      session.chunksIds ||
+      session.chunkIDs ||
+      session.chunkIDs ||
+      session.chunks ||
+      session.chunk_ids;
 
     if (Array.isArray(rawIds) && rawIds.length) {
       const ids = rawIds.map(toObjectId).filter(Boolean);
@@ -176,12 +181,26 @@ app.get('/api/sessions/:id/chunks', async (req, res) => {
       .map((c, idx) => ({
         idx,
         chunkIndex: c.chunkIndex ?? c.idx ?? c.segmentIndex ?? idx,
+        classification: c.classification ?? c.class ?? c.chunkType ?? c.type ?? null,
         text: c.text ?? c.message ?? c.transcript ?? c.content ?? '',
         startTime: normalizeTimestamp(
-          c.startTime ?? c.start ?? c.tsStart ?? c.begin ?? c.timestamp ?? c.ts ?? c.createdAt ?? c.time
+          c.startTime ??
+            c.start ??
+            c.tsStart ??
+            c.begin ??
+            c.timestamp ??
+            c.ts ??
+            c.createdAt ??
+            c.time
         ),
         endTime: normalizeTimestamp(
-          c.endTime ?? c.end ?? c.tsEnd ?? c.finish ?? c.completedAt ?? c.endTime ?? c.updatedAt
+          c.endTime ??
+            c.end ??
+            c.tsEnd ??
+            c.finish ??
+            c.completedAt ??
+            c.endTime ??
+            c.updatedAt
         ),
         speaker:
           c.speakerName ??
