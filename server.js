@@ -13,6 +13,7 @@ app.use(express.json());
 
 let uri = process.env.MONGODB_URI;
 const defaultDb = process.env.MONGO_DB;
+
 if (!uri) {
   console.error('Missing MONGODB_URI env var');
 } else if (defaultDb && !uri.includes(`/${defaultDb}`)) {
@@ -30,6 +31,16 @@ mongoose
 
 mongoose.connection.on('connected', async () => {
   try {
+    const dbs = await mongoose.connection.db.admin().listDatabases();
+    console.log(
+      'Mongo databases:',
+      dbs.databases.map((d) => d.name)
+    );
+  } catch (e) {
+    console.error('Failed to list databases', e.message);
+  }
+
+  try {
     const cols = await mongoose.connection.db.listCollections().toArray();
     console.log('Mongo collections:', cols.map((c) => c.name));
   } catch (e) {
@@ -38,8 +49,10 @@ mongoose.connection.on('connected', async () => {
 });
 
 const sessionSchema = new mongoose.Schema({}, { strict: false });
+
 const collectionName = process.env.MONGO_COLLECTION || 'sessions';
 console.log('Using collection:', collectionName);
+
 const Session = mongoose.model('Session', sessionSchema, collectionName);
 
 // API: list sessions (latest first)
@@ -47,7 +60,6 @@ app.get('/api/sessions', async (req, res) => {
   try {
     const { limit = 50, q } = req.query;
     let query = {};
-
     if (q) {
       const regex = new RegExp(q, 'i');
       query = {
@@ -75,13 +87,25 @@ app.get('/api/sessions', async (req, res) => {
   }
 });
 
+// API: get single session by id
+app.get('/api/sessions/:id', async (req, res) => {
+  try {
+    const s = await Session.findById(req.params.id);
+    if (!s) return res.status(404).json({ error: 'Not found' });
+    res.json(s);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch session' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const port = process.env.PORT || 8080;
-app.listen(port, () => {
-  console.log('Server running on port', port);
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
