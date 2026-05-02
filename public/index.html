@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Transcription Webview</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; padding: 0; background: #0b1020; color: #e8eefc; }
+    header { padding: 16px 20px; background: rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    h1 { margin: 0; font-size: 16px; letter-spacing: .2px; }
+    .sub { opacity: 0.75; font-size: 12px; margin-top: 4px; }
+    .top { display:flex; align-items:center; gap:12px; }
+    input[type='search'] { padding: 9px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.35); color:#fff; min-width: 280px; }
+    .grid { display:grid; grid-template-columns: 320px 1fr 360px; height: calc(100vh - 64px); }
+    .pane { border-right: 1px solid rgba(255,255,255,0.12); display:flex; flex-direction: column; }
+    .pane:last-child { border-right:none; border-left: 1px solid rgba(255,255,255,0.12); }
+    .scroll { overflow:auto; }
+    .list { padding: 12px; }
+    .card { border-radius: 12px; padding: 12px; margin-bottom: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
+    .card:hover { background: rgba(255,255,255,0.06); }
+    .card.active { border-color: rgba(129, 161, 255, 0.75); box-shadow: 0 0 0 3px rgba(129, 161, 255, 0.16); }
+    .kpis { display:flex; gap: 10px; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); }
+    .kpi { flex:1; border-radius: 12px; background: rgba(255,255,255,0.04); padding: 10px; border: 1px solid rgba(255,255,255,0.1); }
+    .kpi .label { font-size: 11px; opacity: 0.8; }
+    .kpi .val { font-size: 18px; font-weight: 600; margin-top: 2px; }
+    .section { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); display:flex; align-items:center; justify-content: space-between; }
+    .section b { font-size: 12px; }
+    .blob { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; white-space: pre-wrap; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 12px; }
+    .center { padding: 12px; }
+    .timeline { border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
+    .item { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.15); }
+    .item:last-child { border-bottom: none; }
+    .muted { opacity: 0.75; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Transcription Webview</h1>
+      <div class="sub">Searchable transcript sessions from Mentra (MongoDB) — timeline, viewer, and AI summary hooks.</div>
+    </div>
+    <div class="top">
+      <input id="query" type="search" placeholder="Search sessions (sessionId/text/transcript/message)…" />
+      <button onclick="window.location.reload()" style="cursor:pointer;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.35);color:#fff;padding:9px 10px;">Reload</button>
+    </div>
+  </header>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script>
+    const { useState, useEffect, useMemo } = React;
+
+    function getLabel(doc) {
+      const d = new Date(doc.createdAt || doc.timestamp || doc.time || doc.date || doc._id?.timestamp || Date.now());
+      const dt = isNaN(d.getTime()) ? '' : d.toLocaleString();
+      const session = doc.sessionId || doc.conversationId || doc.id || doc._id || 'session';
+      return `${session} · ${dt}`;
+    }
+
+    function getText(doc) {
+      return doc.text || doc.transcript || doc.message || doc.content || doc.payload?.text || JSON.stringify(doc).slice(0, 200);
+    }
+
+    function Dashboard() {
+      const [sessions, setSessions] = useState([]);
+      const [selected, setSelected] = useState(null);
+      const [loading, setLoading] = useState(true);
+
+      const fetchSessions = async (q) => {
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        try {
+          const res = await fetch(`/api/sessions?${params.toString()}`);
+          const data = await res.json();
+          setSessions(data || []);
+          setSelected(data?.[0] || null);
+        } catch (e) {
+          console.error(e);
+          setSessions([]);
+          setSelected(null);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        const search = document.getElementById('query');
+        const onInput = (e) => fetchSessions(e.target.value);
+        search.addEventListener('input', onInput);
+        fetchSessions('');
+        return () => search.removeEventListener('input', onInput);
+      }, []);
+
+      const kpis = useMemo(() => {
+        const total = sessions.length;
+        const withText = sessions.filter((s) => getText(s)).length;
+        const withSessionId = sessions.filter((s) => s.sessionId).length;
+        return { total, withText, withSessionId };
+      }, [sessions]);
+
+      return React.createElement(
+        'div',
+        { className: 'grid' },
+        React.createElement(
+          'aside',
+          { className: 'pane' },
+          React.createElement(
+            'div',
+            { className: 'kpis' },
+            React.createElement(
+              'div',
+              { className: 'kpi' },
+              React.createElement('div', { className: 'label' }, 'Total docs'),
+              React.createElement('div', { className: 'val' }, loading ? '…' : kpis.total)
+            ),
+            React.createElement(
+              'div',
+              { className: 'kpi' },
+              React.createElement('div', { className: 'label' }, 'With text'),
+              React.createElement('div', { className: 'val' }, loading ? '…' : kpis.withText)
+            ),
+            React.createElement(
+              'div',
+              { className: 'kpi' },
+              React.createElement('div', { className: 'label' }, 'With sessionId'),
+              React.createElement('div', { className: 'val' }, loading ? '…' : kpis.withSessionId)
+            )
+          ),
+          React.createElement(
+            'div',
+            { className: 'scroll' },
+            React.createElement(
+              'div',
+              { className: 'list' },
+              (sessions || []).map((doc) =>
+                React.createElement(
+                  'div',
+                  {
+                    key: doc._id?.$oid || doc._id || doc.sessionId || Math.random().toString(),
+                    className: 'card' + (selected === doc ? ' active' : ''),
+                    onClick: () => setSelected(doc),
+                  },
+                  React.createElement('div', { style: { fontWeight: 700 } }, getLabel(doc)),
+                  React.createElement('div', { className: 'muted' }, getText(doc))
+                )
+              )
+            )
+          )
+        ),
+
+        React.createElement(
+          'main',
+          { className: 'scroll' },
+          React.createElement(
+            'div',
+            { className: 'center' },
+            React.createElement(
+              'div',
+              { className: 'section' },
+              React.createElement('b', null, 'Transcript timeline'),
+              React.createElement(
+                'span',
+                { className: 'muted' },
+                selected ? selected.sessionId || selected._id || selected.id : ''
+              )
+            ),
+            React.createElement(
+              'div',
+              { className: 'timeline' },
+              selected ?
+                React.createElement(
+                  'div',
+                  null,
+                  React.createElement(
+                    'div',
+                    { className: 'item' },
+                    React.createElement('div', { style: { fontWeight: 700 } }, 'Entry'),
+                    React.createElement('div', { className: 'muted' }, getLabel(selected)),
+                    React.createElement('div', { style: { marginTop: 6 } }, getText(selected))
+                  )
+                ) :
+                React.createElement('div', { className: 'muted' }, loading ? 'Loading…' : 'Select a session')
+            )
+          )
+        ),
+
+        React.createElement(
+          'aside',
+          { className: 'pane scroll' },
+          React.createElement(
+            'div',
+            { className: 'section' },
+            React.createElement('b', null, 'Viewer / raw doc'),
+            React.createElement('span', { className: 'muted' }, 'JSON')
+          ),
+          React.createElement(
+            'div',
+            { className: 'center' },
+            React.createElement('div', { className: 'blob' }, selected ? JSON.stringify(selected, null, 2) : (loading ? 'Loading…' : 'Select a session'))
+          )
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Dashboard));
+  </script>
+</body>
+</html>
