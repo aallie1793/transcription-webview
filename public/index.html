@@ -1,234 +1,671 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Transcription Webview</title>
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; padding: 0; background: #0b1020; color: #e8eefc; }
-    header { padding: 16px 20px; background: rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    h1 { margin: 0; font-size: 16px; letter-spacing: .2px; }
-    .sub { opacity: 0.75; font-size: 12px; margin-top: 4px; }
-    .top { display:flex; align-items:center; gap:12px; }
-    input[type='search'] { padding: 9px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.35); color:#fff; min-width: 280px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transcription Webview</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: rgba(255, 255, 255, 0.04);
+        --panel2: rgba(255, 255, 255, 0.02);
+        --text: #e8eefc;
+        --muted: rgba(232, 238, 252, 0.75);
+        --line: rgba(255, 255, 255, 0.12);
+        --accent: rgba(129, 161, 255, 0.86);
+      }
 
-    .grid { display:grid; grid-template-columns: 250px 320px 1fr 360px; height: calc(100vh - 64px); }
-    .pane { border-right: 1px solid rgba(255,255,255,0.12); display:flex; flex-direction: column; }
-    .pane:last-child { border-right:none; border-left: 1px solid rgba(255,255,255,0.12); }
-    .scroll { overflow:auto; }
-    .section { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); display:flex; align-items:center; justify-content: space-between; }
-    .section b { font-size: 12px; }
-    .muted { opacity: 0.75; font-size: 12px; }
-    .card { border-radius: 12px; padding: 12px; margin: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
-    .card:hover { background: rgba(255,255,255,0.06); }
-    .card.active { border-color: rgba(129, 161, 255, 0.75); box-shadow: 0 0 0 3px rgba(129, 161, 255, 0.16); }
-    .blob { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; white-space: pre-wrap; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 12px; margin: 12px; }
-    .timeline { border-radius: 12px; padding: 12px; margin: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
-    .item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.15); }
-    .item:last-child { border-bottom: none; }
-  </style>
-</head>
-<body>
-  <header>
-    <div>
-      <h1>Transcription Webview</h1>
-      <div class="sub">User &gt; Sessions &gt; Transcript &gt; Summary</div>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      header {
+        padding: 16px 20px;
+        background: rgba(255, 255, 255, 0.06);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .muted {
+        opacity: 0.9;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      input[type="search"] {
+        padding: 9px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.35);
+        color: #fff;
+        min-width: 280px;
+      }
+
+      button {
+        cursor: pointer;
+        border-radius: 10px;
+        padding: 9px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.02);
+        color: #fff;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 260px 320px 1fr 360px;
+        height: calc(100vh - 64px);
+      }
+
+      .pane {
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .pane:last-child {
+        border-right: none;
+        border-left: 1px solid var(--line);
+      }
+
+      .section {
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel2);
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .scroll {
+        overflow: auto;
+      }
+
+      .card {
+        border-radius: 12px;
+        padding: 12px;
+        margin: 12px;
+        background: var(--panel);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+      }
+
+      .clickable {
+        cursor: pointer;
+      }
+
+      .card.clickable:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(129, 161, 255, 0.16);
+      }
+
+      .title {
+        font-weight: 650;
+        font-size: 12px;
+      }
+
+      .subline {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .timeline {
+        border-radius: 12px;
+        padding: 12px;
+        margin: 12px;
+        background: var(--panel);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+      }
+
+      .chunk {
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+        padding: 10px 0;
+      }
+
+      .chunk:last-child {
+        border-bottom: none;
+      }
+
+      .meta {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        margin-bottom: 4px;
+      }
+
+      .time {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        opacity: 0.9;
+        min-width: 90px;
+      }
+
+      .speaker {
+        font-weight: 800;
+        font-size: 12px;
+        color: rgba(129, 161, 255, 0.95);
+      }
+
+      .blob {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Transcription Webview</h1>
+        <div class="muted">User → Sessions → Transcript (timestamps + speakers) → Summary</div>
+      </div>
+
+      <div class="top">
+        <input type="search" id="search" placeholder="Search sessions (user/title/text)" />
+        <button id="reload">Reload</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="pane">
+        <div class="section"><b>Users</b><span class="muted" id="userMeta"></span></div>
+        <div class="scroll" id="users"></div>
+      </div>
+
+      <div class="pane">
+        <div class="section"><b>Sessions</b><span class="muted" id="sessionMeta"></span></div>
+        <div class="scroll" id="sessions"></div>
+      </div>
+
+      <div class="pane">
+        <div class="section"><b>Transcript</b><span class="muted" id="transcriptMeta"></span></div>
+        <div class="scroll" id="transcript"></div>
+      </div>
+
+      <div class="pane">
+        <div class="section"><b>Summary</b><span class="muted" id="summaryMeta"></span></div>
+        <div class="scroll" id="summary"></div>
+      </div>
     </div>
-    <div class="top">
-      <input id="query" type="search" placeholder="Search (user/session/transcript/summary)…" />
-      <button onclick="window.location.reload()" style="cursor:pointer;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.35);color:#fff;padding:9px 10px;">Reload</button>
-    </div>
-  </header>
-  <div id="root"></div>
 
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script>
-    const { useState, useEffect, useMemo } = React;
+    <script>
+      (function () {
+        const els = {
+          users: document.getElementById('users'),
+          sessions: document.getElementById('sessions'),
+          transcript: document.getElementById('transcript'),
+          summary: document.getElementById('summary'),
+          userMeta: document.getElementById('userMeta'),
+          sessionMeta: document.getElementById('sessionMeta'),
+          transcriptMeta: document.getElementById('transcriptMeta'),
+          summaryMeta: document.getElementById('summaryMeta'),
+          search: document.getElementById('search'),
+          reload: document.getElementById('reload'),
+        };
 
-    function getUser(doc) {
-      return doc.userName || doc.userId || doc.email || doc.owner || doc.user || 'Unknown user';
-    }
+        const state = {
+          all: [],
+          filtered: [],
+          groups: new Map(), // key -> { name, sessions }
+          selectedUser: null,
+          selectedSessionId: null,
+          chunkCache: new Map(), // sessionId -> chunks
+          chunkLoading: false,
+          chunkError: null,
+          loading: true,
+          error: null,
+        };
 
-    function getSessionLabel(doc) {
-      return doc.title || doc.sessionId || doc.conversationId || doc.name || doc._id || 'Session';
-    }
+        const isString = (v) => typeof v === 'string' && v.trim().length > 0;
 
-    function getTranscript(doc) {
-      return doc.transcript || doc.text || doc.runningSummary || doc.content || doc.payload?.text || '';
-    }
-
-    function getSummary(doc) {
-      return doc.summary || doc.aiSummary || doc.runningSummary || '';
-    }
-
-    function getDocKey(doc) {
-      return doc._id?.$oid || doc._id?.toString?.() || doc._id || doc.sessionId || doc.conversationId || Math.random().toString();
-    }
-
-    function Dashboard() {
-      const [allDocs, setAllDocs] = useState([]);
-      const [selectedUser, setSelectedUser] = useState(null);
-      const [selectedSession, setSelectedSession] = useState(null);
-      const [loading, setLoading] = useState(true);
-
-      const fetchDocs = async (q) => {
-        setLoading(true);
-        const params = new URLSearchParams();
-        if (q) params.set('q', q);
-        try {
-          const res = await fetch(`/api/sessions?${params.toString()}`);
-          const data = await res.json();
-          setAllDocs(data || []);
-          const first = data?.[0] || null;
-          const user = first ? getUser(first) : null;
-          setSelectedUser(user);
-          setSelectedSession(first || null);
-        } catch (e) {
-          console.error(e);
-          setAllDocs([]);
-          setSelectedUser(null);
-          setSelectedSession(null);
-        } finally {
-          setLoading(false);
+        function firstDefined(obj, keys) {
+          for (const k of keys) {
+            const v = obj && obj[k];
+            if (v !== undefined && v !== null) return v;
+          }
+          return null;
         }
-      };
 
-      useEffect(() => {
-        const search = document.getElementById('query');
-        const onInput = (e) => fetchDocs(e.target.value);
-        search.addEventListener('input', onInput);
-        fetchDocs('');
-        return () => search.removeEventListener('input', onInput);
-      }, []);
-
-      const { users, sessionsByUser } = useMemo(() => {
-        const buckets = new Map();
-        for (const doc of allDocs) {
-          const user = getUser(doc);
-          const arr = buckets.get(user) || [];
-          arr.push(doc);
-          buckets.set(user, arr);
+        function getUserKey(s) {
+          return (
+            firstDefined(s, ['userId', 'userEmail', 'email', 'user', 'userName', 'userDisplayName']) ||
+            'unknown'
+          ).toString();
         }
-        const usersList = Array.from(buckets.keys()).map((u) => ({
-          id: u,
-          count: buckets.get(u)?.length || 0,
-        })).sort((a, b) => a.id.localeCompare(b.id));
-        return { users: usersList, sessionsByUser: buckets };
-      }, [allDocs]);
 
-      const sessionsForSelectedUser = useMemo(() => {
-        if (!selectedUser) return [];
-        return sessionsByUser.get(selectedUser) || [];
-      }, [selectedUser, sessionsByUser]);
+        function getUserName(s) {
+          return (
+            firstDefined(s, ['userName', 'userDisplayName', 'userFullName', 'user', 'userId', 'email', 'userEmail']) ||
+            'Unknown'
+          ).toString();
+        }
 
-      return React.createElement(
-        'div',
-        { className: 'grid' },
+        function getTitle(s) {
+          return (
+            firstDefined(s, ['title', 'sessionId', 'conversationTitle', 'name']) ||
+            '(untitled session)'
+          ).toString();
+        }
 
-        // Users
-        React.createElement(
-          'aside',
-          { className: 'pane scroll' },
-          React.createElement(
-            'div',
-            { className: 'section' },
-            React.createElement('b', null, 'User Name'),
-            React.createElement('span', { className: 'muted' }, loading ? 'Loading…' : `${users.length} users`)
-          ),
-          (users || []).map((u) =>
-            React.createElement(
-              'div',
-              {
-                key: u.id,
-                className: 'card' + (selectedUser === u.id ? ' active' : ''),
-                onClick: () => {
-                  setSelectedUser(u.id);
-                  setSelectedSession((sessionsByUser.get(u.id) || [])[0] || null);
-                },
-              },
-              React.createElement('div', { style: { fontWeight: 700 } }, u.id),
-              React.createElement('div', { className: 'muted' }, `${u.count} sessions`)
-            )
-          )
-        ),
+        function getSessionTimestamp(s) {
+          const t = firstDefined(s, [
+            'createdAt',
+            'updatedAt',
+            'startTime',
+            'endTime',
+            'date',
+            'timestamp',
+            'ts',
+          ]);
+          const d = new Date(t);
+          return isNaN(d.getTime()) ? null : d;
+        }
 
-        // Sessions
-        React.createElement(
-          'aside',
-          { className: 'pane scroll' },
-          React.createElement(
-            'div',
-            { className: 'section' },
-            React.createElement('b', null, 'Sessions'),
-            React.createElement(
-              'span',
-              { className: 'muted' },
-              selectedUser ? `${sessionsForSelectedUser.length} found` : ''
-            )
-          ),
-          selectedUser
-            ? (sessionsForSelectedUser || []).map((doc) =>
-                React.createElement(
-                  'div',
-                  {
-                    key: getDocKey(doc),
-                    className: 'card' + (selectedSession && getDocKey(selectedSession) === getDocKey(doc) ? ' active' : ''),
-                    onClick: () => setSelectedSession(doc),
-                  },
-                  React.createElement('div', { style: { fontWeight: 700 } }, getSessionLabel(doc)),
-                  React.createElement('div', { className: 'muted' }, doc.date || doc.createdAt || '')
-                )
-              )
-            : React.createElement('div', { className: 'muted', style: { padding: 12 } }, loading ? 'Loading…' : 'Select a user')
-        ),
+        function fmtSessionTime(s) {
+          const d = getSessionTimestamp(s);
+          return d ? d.toLocaleString() : '';
+        }
 
-        // Transcript
-        React.createElement(
-          'main',
-          { className: 'pane scroll' },
-          React.createElement(
-            'div',
-            { className: 'section' },
-            React.createElement('b', null, 'Transcript'),
-            React.createElement('span', { className: 'muted' }, selectedSession ? getSessionLabel(selectedSession) : '')
-          ),
-          selectedSession
-            ? React.createElement(
-                'div',
-                { className: 'timeline' },
-                React.createElement('div', { className: 'item' },
-                  React.createElement('div', { className: 'muted' }, selectedSession.date || selectedSession.createdAt || ''),
-                  React.createElement('div', { style: { marginTop: 6 } }, getTranscript(selectedSession)
-                )
-              )
-            )
-            : React.createElement('div', { className: 'muted', style: { padding: 12 } }, loading ? 'Loading…' : 'Select a session')
-        ),
+        function fmtTimeCode(ts) {
+          if (ts === null || ts === undefined) return '';
 
-        // Summary ( + raw doc)
-        React.createElement(
-          'aside',
-          { className: 'pane scroll' },
-          React.createElement(
-            'div',
-            { className: 'section' },
-            React.createElement('b', null, 'Summary'),
-            React.createElement('span', { className: 'muted' }, 'JSON')
-          ),
-          selectedSession
-            ? React.createElement(
-                React.Fragment,
-                null,
-                React.createElement('div', { className: 'blob' }, getSummary(selectedSession) || 'No summary found'),
-                React.createElement('div', { className: 'blob' }, JSON.stringify(selectedSession, null, 2))
-              )
-            : React.createElement('div', { className: 'muted', style: { padding: 12 } }, loading ? 'Loading…' : 'Select a session')
-        )
-      );
-    }
+          // numeric seconds
+          if (typeof ts === 'number') {
+            const total = ts;
+            const m = Math.floor(total / 60);
+            const s = Math.floor(total % 60)
+              .toString()
+              .padStart(2, '0');
+            return `${m}:${s}`;
+          }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Dashboard));
-  </script>
-</body>
+          const d = new Date(ts);
+          if (!isNaN(d.getTime())) {
+            return d.toISOString().slice(11, 19); // HH:MM:SS
+          }
+
+          return String(ts);
+        }
+
+        function groupBySpeaker(chunks) {
+          if (!Array.isArray(chunks) || chunks.length === 0) return [];
+          const out = [];
+          let cur = null;
+
+          for (const c of chunks) {
+            const speaker = c.speaker || '';
+            const text = (c.text || '').toString();
+            const startTime = c.startTime || null;
+            const endTime = c.endTime || null;
+
+            if (cur && cur.speaker === speaker) {
+              cur.text.push(text);
+              cur.endTime = endTime || cur.endTime;
+            } else {
+              if (cur) out.push(cur);
+              cur = { speaker, startTime, endTime, text: [text] };
+            }
+          }
+
+          if (cur) out.push(cur);
+
+          return out;
+        }
+
+        function summaryFromSession(s) {
+          return (
+            firstDefined(s, ['aiSummary', 'runningSummary', 'summary', 'note', 'notes', 'transcript', 'text']) ||
+            ''
+          ).toString();
+        }
+
+        function transcriptFallback(s) {
+          const t = (
+            firstDefined(s, ['transcript', 'text', 'runningSummary', 'transcriptText', 'message', 'notes']) ||
+            ''
+          ).toString();
+          return t ? [{ speaker: '', startTime: null, endTime: null, text: [t] }] : [];
+        }
+
+        function buildGroups() {
+          const groups = new Map();
+          for (const s of state.filtered) {
+            const key = getUserKey(s);
+            const name = getUserName(s);
+            if (!groups.has(key)) groups.set(key, { key, name, sessions: [] });
+            groups.get(key).sessions.push(s);
+          }
+
+          // sort sessions by latest time desc
+          for (const g of groups.values()) {
+            g.sessions.sort((a, b) => {
+              const ta = getSessionTimestamp(a)?.getTime() || 0;
+              const tb = getSessionTimestamp(b)?.getTime() || 0;
+              return tb - ta;
+            });
+          }
+
+          state.groups = groups;
+
+          if (!state.selectedUser) {
+            const firstKey = groups.keys().next().value;
+            state.selectedUser = firstKey || null;
+          }
+
+          if (state.selectedUser && !groups.has(state.selectedUser)) {
+            state.selectedUser = null;
+            const firstKey = groups.keys().next().value;
+            state.selectedUser = firstKey || null;
+          }
+
+          // ensure selected session belongs to selected user
+          if (state.selectedUser && state.selectedSessionId) {
+            const g = groups.get(state.selectedUser);
+            const found = g?.sessions?.find((x) => x._id === state.selectedSessionId);
+            if (!found) state.selectedSessionId = null;
+          }
+
+          // default session
+          if (state.selectedSessionId == null && state.selectedUser) {
+            const g = groups.get(state.selectedUser);
+            const first = g?.sessions?.[0];
+            state.selectedSessionId = first?._id || null;
+          }
+        }
+
+        function renderUsers() {
+          const parts = [];
+          const entries = Array.from(state.groups.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+          for (const g of entries) {
+            const active = g.key === state.selectedUser ? 'active' : '';
+            const last = g.sessions[0] ? fmtSessionTime(g.sessions[0]) : '';
+
+            parts.push(`
+              <div class="card clickable ${active}" data-key="${encodeURIComponent(g.key)}">
+                <div class="title">${escapeHtml(g.name)}</div>
+                <div class="subline">
+                  <span>${g.sessions.length} sessions</span>
+                  <span>${escapeHtml(last)}</span>
+                </div>
+              </div>
+            `);
+          }
+
+          els.users.innerHTML = parts.join('');
+
+          for (const el of els.users.querySelectorAll('[data-key]')) {
+            el.onclick = () => {
+              state.selectedUser = decodeURIComponent(el.getAttribute('data-key') || '');
+              state.selectedSessionId = null;
+              state.chunkError = null;
+              render();
+            };
+          }
+
+          els.userMeta.textContent = `${entries.length || 0} users`;
+        }
+
+        function renderSessions() {
+          const g = state.selectedUser ? state.groups.get(state.selectedUser) : null;
+
+          if (!g) {
+            els.sessions.innerHTML = '<div class="muted" style="padding:12px;">No sessions.</div>';
+            els.sessionMeta.textContent = '';
+            return;
+          }
+
+          els.sessionMeta.textContent = `${g.sessions.length} sessions`;
+
+          const parts = [];
+          for (const s of g.sessions) {
+            const active = s._id === state.selectedSessionId ? 'active' : '';
+            parts.push(`
+              <div class="card clickable ${active}" data-id="${escapeHtml(String(s._id))}">
+                <div class="title">${escapeHtml(getTitle(s))}</div>
+                <div class="subline">
+                  <span>${escapeHtml(fmtSessionTime(s))}</span>
+                  <span>${escapeHtml(firstDefined(s, ['classification', 'status', 'stage']) || '')}</span>
+                </div>
+              </div>
+            `);
+          }
+
+          els.sessions.innerHTML = parts.join('');
+
+          for (const el of els.sessions.querySelectorAll('[data-id]')) {
+            el.onclick = async () => {
+              const id = el.getAttribute('data-id') || '';
+              await selectSession(id);
+            };
+          }
+        }
+
+        function getSelectedSession() {
+          if (!state.selectedUser) return null;
+          const g = state.groups.get(state.selectedUser);
+          return g?.sessions?.find((s) => s._id === state.selectedSessionId) || null;
+        }
+
+        function renderTranscript() {
+          const session = getSelectedSession();
+          if (!session) {
+            els.transcript.innerHTML = '<div class="muted" style="padding:12px;">Select a session</div>';
+            els.transcriptMeta.textContent = '';
+            return;
+          }
+
+          const title = getTitle(session);
+          const when = fmtSessionTime(session);
+
+          els.transcriptMeta.textContent = `${title} · ${when}`;
+
+          if (state.chunkLoading) {
+            els.transcript.innerHTML = '<div class="card">Loading chunked transcript…</div>';
+            return;
+          }
+
+          if (state.chunkError) {
+            els.transcript.innerHTML = `<div class="card">Failed to load chunks: ${escapeHtml(
+              state.chunkError
+            )}</div>`;
+            return;
+          }
+
+          const chunks = state.chunkCache.get(state.selectedSessionId) || [];
+
+          const paragraphGroups = chunks.length ? groupBySpeaker(chunks) : transcriptFallback(session);
+
+          const parts = [];
+          parts.push('<div class="timeline">');
+
+          for (const p of paragraphGroups) {
+            const start = fmtTimeCode(p.startTime);
+            const end = fmtTimeCode(p.endTime);
+            const speaker = p.speaker ? escapeHtml(p.speaker) : '';
+            const text = escapeHtml(p.text.join(' ').trim());
+
+            const timeLabel = end ? `${start} - ${end}` : start;
+
+            parts.push(`
+              <div class="chunk">
+                <div class="meta">
+                  <span class="time">${escapeHtml(timeLabel)}</span>
+                  ${speaker ? `<span class="speaker">${speaker}</span>` : ''}
+                </div>
+                <div class="text">${text}</div>
+              </div>
+            `);
+          }
+
+          parts.push('</div>');
+          els.transcript.innerHTML = parts.join('');
+        }
+
+        function renderSummary() {
+          const session = getSelectedSession();
+          if (!session) {
+            els.summary.innerHTML = '<div class="muted" style="padding:12px;">No session selected</div>';
+            els.summaryMeta.textContent = '';
+            return;
+          }
+
+          const title = getTitle(session);
+          els.summaryMeta.textContent = title;
+
+          const summary = summaryFromSession(session);
+          const raw = JSON.stringify(session, null, 2);
+
+          els.summary.innerHTML = `
+            <div class="card">
+              <div class="title">AI Summary</div>
+              <div class="muted">${summary ? '' : 'No summary field found; showing transcript/text instead.'}</div>
+              <div style="margin-top:8px">${escapeHtml(summary || '')}</div>
+            </div>
+            <div class="card">
+              <div class="title">Raw JSON</div>
+              <pre class="blob">${escapeHtml(raw)}</pre>
+            </div>
+          `;
+        }
+
+        async function loadChunks(id) {
+          state.chunkError = null;
+          if (!id) {
+            state.chunkCache.delete(id);
+            return;
+          }
+
+          if (state.chunkCache.has(id)) return;
+
+          state.chunkLoading = true;
+          renderTranscript();
+
+          try {
+            const res = await fetch(`/api/sessions/${encodeURIComponent(id)}/chunks`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            state.chunkCache.set(id, Array.isArray(data?.chunks) ? data.chunks : []);
+          } catch (e) {
+            state.chunkCache.set(id, []);
+            state.chunkError = e?.message || String(e);
+          } finally {
+            state.chunkLoading = false;
+          }
+        }
+
+        async function selectSession(id) {
+          state.selectedSessionId = id;
+          await loadChunks(id);
+          render();
+        }
+
+        function applySearchAndGrouping() {
+          const q = (els.search.value || '').trim();
+          const needle = q.toLowerCase();
+
+          if (!needle) {
+            state.filtered = state.all.slice();
+          } else {
+            state.filtered = state.all.filter((s) => {
+              const hay = [
+                getUserName(s),
+                getUserKey(s),
+                getTitle(s),
+                firstDefined(s, ['text', 'transcript', 'runningSummary', 'aiSummary', 'note']) || '',
+              ].join(' ').toLowerCase();
+              return hay.includes(needle);
+            });
+          }
+
+          buildGroups();
+        }
+
+        function render() {
+          renderUsers();
+          renderSessions();
+          renderTranscript();
+          renderSummary();
+        }
+
+        async function fetchSessions() {
+          state.loading = true;
+          state.error = null;
+          state.selectedSessionId = null;
+          state.selectedUser = null;
+          state.chunkCache.clear();
+          state.chunkError = null;
+
+          try {
+            const q = (els.search.value || '').trim();
+            const url = q
+              ? `/api/sessions?limit=500&q=${encodeURIComponent(q)}`
+              : '/api/sessions?limit=500';
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            state.all = Array.isArray(data) ? data : [];
+          } catch (e) {
+            state.error = e?.message || String(e);
+          } finally {
+            state.loading = false;
+          }
+
+          applySearchAndGrouping();
+          render();
+
+          if (state.error) {
+            els.users.innerHTML = `<div class="card">Failed to load sessions: ${escapeHtml(state.error)}</div>`;
+            els.sessions.innerHTML = '';
+            els.transcript.innerHTML = '';
+            els.summary.innerHTML = '';
+            els.userMeta.textContent = '';
+            els.sessionMeta.textContent = '';
+          }
+        }
+
+        function escapeHtml(str) {
+          return String(str)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+        }
+
+        els.reload.onclick = fetchSessions;
+        els.search.onkeydown = (e) => {
+          if (e.key === 'Enter') fetchSessions();
+        };
+
+        fetchSessions();
+      })();
+    </script>
+  </body>
 </html>
