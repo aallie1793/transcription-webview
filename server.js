@@ -12,7 +12,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(cors());
+// REQUIRED behind Railway/reverse proxies for secure cookies to work
+// (otherwise login appears to succeed but authGuard will send you back to /login)
+app.set('trust proxy', 1);
+
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 let uri = process.env.MONGODB_URI;
@@ -78,7 +87,8 @@ if (authEnabled) {
   passport.deserializeUser((obj, done) => done(null, obj));
 
   app.use(passport.initialize());
-  app.use(passport.authenticate('session'));
+  // Standard session middleware (more widely used than authenticate('session'))
+  app.use(passport.session());
 
   console.log('Google OAuth enabled; login required');
 } else {
