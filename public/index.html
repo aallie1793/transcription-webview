@@ -440,7 +440,7 @@
             const res = await fetch(url);
             if(!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            state.all = Array.isArray(data) ? data : [];
+            state.all = Array.isArray(data) ? data : (Array.isArray(data?.sessions) ? data.sessions : []);
           }catch(e){
             state.error = e?.message || String(e);
             state.all=[];
