@@ -44,12 +44,15 @@ if (authEnabled) {
   app.use(
     session({
       secret: process.env.SESSION_SECRET,
+      proxy: true,
       resave: false,
       saveUninitialized: false,
       store: MongoStore.create({ mongoUrl: uri }),
       cookie: {
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        // OAuth returns from accounts.google.com to your app domain.
+        // `lax` allows cookies on top-level navigation; `strict` can break login persistence.
+        sameSite: 'lax',
       },
     })
   );
