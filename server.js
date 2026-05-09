@@ -184,13 +184,19 @@ mongoose.connection.on('connected', async () => {
   }
 });
 
-// --- Session model
-const sessionCollectionName = process.env.MONGO_COLLECTION || 'conversations';
-const Session = mongoose.model(
-  'Session',
-  new mongoose.Schema({}, { strict: false }),
-  sessionCollectionName
-);
+// --- Session collection resolution
+const configuredSessionCollection = process.env.MONGO_COLLECTION || 'conversations';
+const defaultSessionCollections = [
+  configuredSessionCollection,
+  'conversations',
+  'sessions',
+  'session',
+  'transcripts',
+  'transcriptions',
+  'calls',
+];
+const sessionCollectionCandidates = [...new Set(defaultSessionCollections.filter(Boolean))];
+let resolvedSessionCollection = configuredSessionCollection;
 
 mongoose
   .connect(uri, { serverSelectionTimeoutMS: 8000 })
@@ -221,13 +227,36 @@ app.get('/api/sessions', authGuard, async (req, res) => {
 
     const filter = getSessionSearchFilter(q);
 
-    // Prefer most recent first
-    const sessions = await Session.find(filter)
-      .sort({ date: -1, startTime: -1, createdAt: -1, updatedAt: -1, _id: -1 })
-      .limit(limit)
-      .lean();
+    const sort = { date: -1, startTime: -1, createdAt: -1, updatedAt: -1, _id: -1 };
+    let sessions = [];
+    let usedCollection = resolvedSessionCollection;
 
-    res.json({ sessions });
+    // First try previously resolved collection.
+    if (mongoose.connection.db) {
+      sessions = await mongoose.connection.db
+        .collection(resolvedSessionCollection)
+        .find(filter)
+        .sort(sort)
+        .limit(limit)
+        .toArray();
+    }
+
+    // If empty, probe common collection names to auto-heal env mismatches.
+    if (sessions.length === 0 && mongoose.connection.db) {
+      for (const name of sessionCollectionCandidates) {
+        if (name === resolvedSessionCollection) continue;
+        const docs = await mongoose.connection.db.collection(name).find(filter).sort(sort).limit(limit).toArray();
+        if (docs.length > 0) {
+          sessions = docs;
+          usedCollection = name;
+          resolvedSessionCollection = name;
+          console.log('Resolved session collection:', name);
+          break;
+        }
+      }
+    }
+
+    res.json({ sessions, meta: { collection: usedCollection } });
   } catch (err) {
     console.error('Error in /api/sessions', err?.message);
     res.status(500).json({ error: 'Server error' });
@@ -267,9 +296,24 @@ app.get('/api/sessions/:id/chunks', authGuard, async (req, res) => {
   try {
     const { id } = req.params;
     const chunkCollectionName = process.env.CHUNK_COLLECTION || 'transcriptchunks';
+    const oid = safeObjectId(id);
 
-    // Try to get the session doc first because it may contain chunkIds
-    const session = await Session.findById(id).lean();
+    // Try to find the session across resolved and candidate collections.
+    let session = null;
+    if (mongoose.connection.db) {
+      const probeCollections = [resolvedSessionCollection, ...sessionCollectionCandidates].filter(
+        (v, i, arr) => v && arr.indexOf(v) === i
+      );
+      for (const name of probeCollections) {
+        session =
+          (oid && (await mongoose.connection.db.collection(name).findOne({ _id: oid }))) ||
+          (await mongoose.connection.db.collection(name).findOne({ _id: id }));
+        if (session) {
+          resolvedSessionCollection = name;
+          break;
+        }
+      }
+    }
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
     let chunkIds = session.chunkIds || session.chunks || session.transcriptChunks || [];
@@ -339,7 +383,7 @@ app.get('/api/debug/collections', authGuard, async (_req, res) => {
 
 app.get('/api/debug/sample', authGuard, async (req, res) => {
   try {
-    const colName = String(req.query.col || sessionCollectionName);
+    const colName = String(req.query.col || resolvedSessionCollection);
     if (!mongoose.connection.db) return res.status(500).json({ error: 'No DB connection' });
 
     const doc = await mongoose.connection.db.collection(colName).findOne({}, { sort: { _id: -1 } });
